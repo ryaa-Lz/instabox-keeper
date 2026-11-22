@@ -1,0 +1,30 @@
+name: instabox-keeper-zencloud
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: instabox-keeper-zencloud
+  cancel-in-progress: false
+
+jobs:
+  keep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Renew lease and rotate before max run
+        env:
+          INSTABOX_API_KEY: ${{ secrets.ZENCLOUD_INSTABOX_API_KEY }}
+          INSTABOX_MACHINE: ${{ secrets.ZENCLOUD_INSTABOX_MACHINE }}
+          INSTABOX_LEASE_TTL: "3600"
+          INSTABOX_ROTATE_MARGIN_MIN: "60"
+        run: node run.mjs
