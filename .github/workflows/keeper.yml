@@ -1,0 +1,47 @@
+name: instabox-keeper
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: instabox-keeper
+  cancel-in-progress: false
+
+jobs:
+  keep:
+    if: github.event.schedule != '0 0 1 * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Renew lease and rotate before max run
+        env:
+          INSTABOX_API_KEY: ${{ secrets.INSTABOX_API_KEY }}
+          INSTABOX_MACHINE: ${{ secrets.INSTABOX_MACHINE }}
+          INSTABOX_LEASE_TTL: "3600"
+          INSTABOX_ROTATE_MARGIN_MIN: "60"
+        run: node run.mjs
+
+  touch:
+    if: github.event.schedule == '0 0 1 * *'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Keep scheduled workflows enabled
+        run: |
+          mkdir -p .github
+          date -u +%FT%TZ > .github/last-activity
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/last-activity
+          git commit -m "chore: keepalive $(date -u +%F)" || true
+          git push
