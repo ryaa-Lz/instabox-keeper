@@ -373,7 +373,9 @@ async function appendLog(env, summary, cfg) {
 export default {
   async scheduled(_event, env, ctx) {
     const cfg = config(env);
+    console.log("cron start", new Date().toISOString());
     const summary = await renewAll(env, "cron");
+    console.log("cron done", JSON.stringify(summary));
     ctx.waitUntil(appendLog(env, summary, cfg));
   },
 
